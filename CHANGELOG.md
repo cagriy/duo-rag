@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.1] - 2026-02-28
+
+### Fixed
+- `ChromaVectorStore.add()` now filters out `None` metadata values before passing to ChromaDB (which only accepts `str`, `int`, `float`, `bool`)
+
+### Changed
+- Example script wipes `example_data/` before ingesting to ensure a clean run
+- Example script enters an interactive query loop after preset questions finish
+
 ## [0.1.0] - 2026-02-28
 
 ### Added

@@ -62,6 +62,9 @@ def main():
     #      - Use the LLM to extract metadata per the schema
     #      - Store chunks in a vector store and metadata in a SQL database
     # ------------------------------------------------------------------
+    import shutil
+    shutil.rmtree("./example_data", ignore_errors=True)
+
     print("Ingesting documents...")
     rag.ingest("examples/documents/")
     print(f"Done. Schema fields: {[f.name for f in rag.schema.fields]}")
@@ -89,6 +92,26 @@ def main():
         print(f"\nQ: {q}")
         answer = rag.query(q)
         print(f"A: {answer}")
+
+    # ------------------------------------------------------------------
+    # 5. Interactive query loop
+    # ------------------------------------------------------------------
+    print("\n" + "=" * 60)
+    print("Interactive mode — type your questions (or 'quit' to exit)")
+    print("=" * 60)
+
+    while True:
+        try:
+            question = input("\nQ: ").strip()
+        except (EOFError, KeyboardInterrupt):
+            print("\nBye!")
+            break
+        if not question:
+            continue
+        if question.lower() in {"quit", "exit", "q"}:
+            print("Bye!")
+            break
+        print(f"A: {rag.query(question)}")
 
 
 if __name__ == "__main__":
