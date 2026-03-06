@@ -210,6 +210,43 @@ class TestExtractorExtract:
         assert result["year"] is None
 
 
+    @patch("meta_rag.ingestion.extractor.openai.OpenAI")
+    def test_extract_list_values_joined_as_csv(self, mock_openai_cls):
+        """List values from the LLM are joined into a comma-separated string."""
+        schema = MetadataSchema(
+            fields=[MetadataField(name="interests", type="text", description="Interests")]
+        )
+
+        mock_client = MagicMock()
+        mock_openai_cls.return_value = mock_client
+        mock_client.chat.completions.create.return_value = _mock_openai_response(
+            json.dumps({"interests": ["astronomy", "physics"]})
+        )
+
+        extractor = MetadataExtractor(llm_model="test-model")
+        result = extractor.extract("text about interests", schema)
+
+        assert result["interests"] == "astronomy, physics"
+
+    @patch("meta_rag.ingestion.extractor.openai.OpenAI")
+    def test_extract_all_null_list_returns_none(self, mock_openai_cls):
+        """A list of only null values normalises to None."""
+        schema = MetadataSchema(
+            fields=[MetadataField(name="interests", type="text", description="Interests")]
+        )
+
+        mock_client = MagicMock()
+        mock_openai_cls.return_value = mock_client
+        mock_client.chat.completions.create.return_value = _mock_openai_response(
+            json.dumps({"interests": [None, None]})
+        )
+
+        extractor = MetadataExtractor(llm_model="test-model")
+        result = extractor.extract("text about interests", schema)
+
+        assert result["interests"] is None
+
+
 class TestExtractorDiscoverSchema:
     """discover_schema() returns a MetadataSchema with correct fields."""
 

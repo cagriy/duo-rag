@@ -12,6 +12,16 @@ class MetadataField:
     description: str
 
 
+@dataclass
+class SchemaEvolutionResult:
+    """Result of a schema gap detection check."""
+
+    gap_detected: bool
+    reasoning: str
+    proposed_field: MetadataField | None
+    message: str  # user-facing message
+
+
 TYPE_MAP = {
     "text": "TEXT",
     "integer": "INTEGER",
@@ -25,6 +35,14 @@ class MetadataSchema:
 
     def __init__(self, fields: list[MetadataField]) -> None:
         self.fields = fields
+
+    def add_field(self, field: MetadataField) -> None:
+        """Append a new field to the schema."""
+        self.fields.append(field)
+
+    def remove_field(self, field_name: str) -> None:
+        """Remove a field from the schema by name."""
+        self.fields = [f for f in self.fields if f.name != field_name]
 
     def to_ddl(self) -> str:
         """Generate SQL CREATE TABLE statement for the metadata schema."""

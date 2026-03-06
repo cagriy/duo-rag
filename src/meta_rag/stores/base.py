@@ -39,6 +39,18 @@ class VectorStore(ABC):
         filters: dict | None = None,
     ) -> list[SearchResult]: ...
 
+    @abstractmethod
+    def delete_document(self, doc_id: str) -> None: ...
+
+    @abstractmethod
+    def clear_all(self) -> None: ...
+
+    @abstractmethod
+    def get_all_chunks(self) -> list[tuple[str, str, str]]: ...
+
+    @abstractmethod
+    def update_metadata(self, chunk_id: str, metadata: dict) -> None: ...
+
 
 class RelationalStore(ABC):
     @abstractmethod
@@ -49,3 +61,9 @@ class RelationalStore(ABC):
 
     @abstractmethod
     def execute_sql(self, sql: str) -> list[dict]: ...
+
+    @abstractmethod
+    def delete_document(self, doc_id: str) -> None: ...
+
+    @abstractmethod
+    def clear_all_data(self) -> None: ...

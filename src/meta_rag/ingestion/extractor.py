@@ -52,6 +52,8 @@ class MetadataExtractor:
                     result[field.name] = int(value)
                 except (ValueError, TypeError):
                     result[field.name] = None
+            elif isinstance(value, list):
+                result[field.name] = ", ".join(str(v) for v in value if v is not None) or None
             else:
                 result[field.name] = str(value)
 

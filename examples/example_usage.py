@@ -12,6 +12,12 @@ Usage:
     uv run python examples/example_usage.py
 """
 
+import os
+
+from dotenv import load_dotenv
+
+load_dotenv()
+
 from meta_rag import MetaRAG, MetadataField
 
 
@@ -62,12 +68,12 @@ def main():
     #      - Use the LLM to extract metadata per the schema
     #      - Store chunks in a vector store and metadata in a SQL database
     # ------------------------------------------------------------------
-    import shutil
-    shutil.rmtree("./example_data", ignore_errors=True)
-
-    print("Ingesting documents...")
-    rag.ingest("examples/documents/")
-    print(f"Done. Schema fields: {[f.name for f in rag.schema.fields]}")
+    if not os.path.exists("./example_data/metadata.db"):
+        print("Ingesting documents...")
+        rag.ingest("examples/documents/")
+        print(f"Done. Schema fields: {[f.name for f in rag.schema.fields]}")
+    else:
+        print(f"Using existing data. Schema fields: {[f.name for f in rag.schema.fields]}")
 
     # ------------------------------------------------------------------
     # 4. Query the system
@@ -94,10 +100,16 @@ def main():
         print(f"A: {answer}")
 
     # ------------------------------------------------------------------
-    # 5. Interactive query loop
+    # 5. Interactive query loop (with schema gap detection)
+    #    Pass evolve=True so meta-rag detects missing schema fields and
+    #    appends an informational message when a gap is found.
+    #    After a gap is detected, call rag.backfill() to populate the
+    #    new field from all already-stored document chunks.
     # ------------------------------------------------------------------
     print("\n" + "=" * 60)
     print("Interactive mode — type your questions (or 'quit' to exit)")
+    print("  evolve=True is active: gaps trigger auto field addition.")
+    print("  Type /backfill to populate newly added fields.")
     print("=" * 60)
 
     while True:
@@ -111,7 +123,16 @@ def main():
         if question.lower() in {"quit", "exit", "q"}:
             print("Bye!")
             break
-        print(f"A: {rag.query(question)}")
+        if question.lower() in {"backfill", "/backfill"}:
+            print("Running backfill...")
+
+            def _progress(current: int, total: int) -> None:
+                print(f"  Backfilling chunk {current}/{total}...", end="\r")
+
+            result = rag.backfill(on_progress=_progress)
+            print(f"\nBackfill complete. Populated: {result['populated']}  Pruned: {result['pruned']}")
+            continue
+        print(f"A: {rag.query(question, evolve=True)}")
 
 
 if __name__ == "__main__":

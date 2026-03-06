@@ -10,12 +10,13 @@ class ChromaVectorStore(VectorStore):
     def __init__(self, persist_dir: str) -> None:
         self.persist_dir = persist_dir
         self.collection = None
+        self._client = None
         self.schema: MetadataSchema | None = None
 
     def initialize(self, schema: MetadataSchema) -> None:
         self.schema = schema
-        client = chromadb.PersistentClient(path=self.persist_dir)
-        self.collection = client.get_or_create_collection("documents")
+        self._client = chromadb.PersistentClient(path=self.persist_dir)
+        self.collection = self._client.get_or_create_collection("documents")
 
     def add(
         self,
@@ -71,3 +72,30 @@ class ChromaVectorStore(VectorStore):
             )
 
         return search_results
+
+    def delete_document(self, doc_id: str) -> None:
+        self.collection.delete(where={"doc_id": doc_id})
+
+    def clear_all(self) -> None:
+        self._client.delete_collection("documents")
+        self.collection = self._client.create_collection("documents")
+
+    def get_all_chunks(self) -> list[tuple[str, str, str]]:
+        result = self.collection.get(include=["documents", "metadatas"])
+        chunks = []
+        for chunk_id, text, metadata in zip(
+            result["ids"], result["documents"], result["metadatas"]
+        ):
+            doc_id = metadata.get("doc_id", chunk_id.rsplit("_", 1)[0])
+            chunks.append((doc_id, chunk_id, text))
+        return chunks
+
+    def update_metadata(self, chunk_id: str, metadata: dict) -> None:
+        result = self.collection.get(ids=[chunk_id], include=["metadatas"])
+        if not result["ids"]:
+            return
+        current = result["metadatas"][0] or {}
+        merged = {**current, **metadata}
+        # ChromaDB does not accept None values
+        merged = {k: v for k, v in merged.items() if v is not None}
+        self.collection.update(ids=[chunk_id], metadatas=[merged])
