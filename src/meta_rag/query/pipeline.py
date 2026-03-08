@@ -67,7 +67,7 @@ class QueryPipeline:
                 }
             )
 
-        # Build messages for the second LLM call
+        # Build messages with tool results
         messages.append(choice.message)
         for tool_result in tool_results:
             messages.append(
@@ -78,10 +78,44 @@ class QueryPipeline:
                 }
             )
 
-        # Second LLM call: synthesize a natural language answer from tool results
+        # Second LLM call: synthesize or make a follow-up tool call
         synthesis_response = self.client.chat.completions.create(
             model=self.model,
             messages=messages,
+            tools=self.tools,
         )
 
-        return synthesis_response.choices[0].message.content
+        synthesis_choice = synthesis_response.choices[0]
+
+        # If the LLM wants to make one more tool call (e.g. SQL returned empty,
+        # falling back to semantic_search), execute it and do a final synthesis
+        if synthesis_choice.finish_reason == "tool_calls":
+            followup_results: list[dict] = []
+            for tool_call in synthesis_choice.message.tool_calls:
+                name = tool_call.function.name
+                arguments = json.loads(tool_call.function.arguments)
+                if name == "run_sql":
+                    self.last_sql = arguments.get("sql")
+                result = self.tool_executor.execute(name, arguments)
+                followup_results.append(
+                    {
+                        "tool_call_id": tool_call.id,
+                        "content": result,
+                    }
+                )
+            messages.append(synthesis_choice.message)
+            for tool_result in followup_results:
+                messages.append(
+                    {
+                        "role": "tool",
+                        "tool_call_id": tool_result["tool_call_id"],
+                        "content": tool_result["content"],
+                    }
+                )
+            final_response = self.client.chat.completions.create(
+                model=self.model,
+                messages=messages,
+            )
+            return final_response.choices[0].message.content
+
+        return synthesis_choice.message.content

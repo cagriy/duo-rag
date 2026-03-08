@@ -40,10 +40,24 @@ class ToolExecutor:
     def _execute_semantic_search(self, arguments: dict) -> str:
         query: str = arguments["query"]
         top_k: int = arguments.get("top_k", 10)
-        filters: dict | None = arguments.get("filters")
+        raw_filters: dict | None = arguments.get("filters")
+
+        chroma_filters: dict | None = None
+        if raw_filters:
+            # Drop null values and SQL-style wildcards (%, _) that mean "any value"
+            valid = {
+                k: v
+                for k, v in raw_filters.items()
+                if v is not None and v != "%" and v != "_" and str(v).strip("%_") != ""
+            }
+            if len(valid) == 1:
+                k, v = next(iter(valid.items()))
+                chroma_filters = {k: {"$eq": v}}
+            elif len(valid) > 1:
+                chroma_filters = {"$and": [{k: {"$eq": v}} for k, v in valid.items()]}
 
         results = self.vector_store.search(
-            query_text=query, top_k=top_k, filters=filters
+            query_text=query, top_k=top_k, filters=chroma_filters
         )
 
         if not results:

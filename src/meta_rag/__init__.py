@@ -71,6 +71,7 @@ class MetaRAG:
             existing = self.relational_store.get_schema_from_db()
             if existing and existing.fields:
                 self.schema = existing
+                self.vector_store.initialize(existing)
                 return
 
         if schema:
@@ -155,7 +156,10 @@ class MetaRAG:
             "  - open-ended or descriptive questions (e.g. 'tell me about', 'explain', 'describe')\n"
             "  - fields that would store long text or summaries (e.g. biography, summary, description)\n"
             "  - questions already well-served by semantic/vector search\n"
-            "  - fields that already exist in the schema\n\n"
+            "  - fields that already exist in the schema\n"
+            "  - fields that are SEMANTICALLY EQUIVALENT to an existing field, even if named "
+            "differently (e.g. 'field_of_expertise', 'profession', 'role', 'specialization' "
+            "are all covered by 'occupation')\n\n"
             "Return JSON with:\n"
             "- gap_detected (bool)\n"
             "- reasoning (string): brief explanation\n"
