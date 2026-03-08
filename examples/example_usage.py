@@ -74,10 +74,14 @@ def main():
     #      - Use the LLM to extract metadata per the schema
     #      - Store chunks in a vector store and metadata in a SQL database
     # ------------------------------------------------------------------
+    def _progress(current: int, total: int) -> None:
+        print(f"  Ingesting file {current}/{total}...", end="\r")
+
     if not os.path.exists("./example_data/metadata.db"):
         print("Ingesting documents...")
-        rag.ingest("examples/documents/")
-        print(f"Done. Schema fields: {[f.name for f in rag.schema.fields]}")
+        stats = rag.ingest("examples/documents/", on_progress=_progress)
+        print(f"\nDone. new={stats['new']}  changed={stats['changed']}  unchanged={stats['unchanged']}")
+        print(f"Schema fields: {[f.name for f in rag.schema.fields]}")
     else:
         print(f"Using existing data. Schema fields: {[f.name for f in rag.schema.fields]}")
 
@@ -115,6 +119,7 @@ def main():
     print("Interactive mode — type your questions (or 'quit' to exit)")
     print("  evolve=True is active: gaps trigger auto field addition.")
     print("  Type /backfill to populate newly added fields.")
+    print("  Type /ingest to re-ingest documents from examples/documents/.")
     print("=" * 60)
 
     conversation_history: list[dict] = []
@@ -133,11 +138,20 @@ def main():
         if question.lower() in {"backfill", "/backfill"}:
             print("Running backfill...")
 
-            def _progress(current: int, total: int) -> None:
+            def _backfill_progress(current: int, total: int) -> None:
                 print(f"  Backfilling chunk {current}/{total}...", end="\r")
 
-            result = rag.backfill(on_progress=_progress)
+            result = rag.backfill(on_progress=_backfill_progress)
             print(f"\nBackfill complete. Populated: {result['populated']}  Pruned: {result['pruned']}")
+            continue
+        if question.lower() in {"ingest", "/ingest"}:
+            print("Re-ingesting documents...")
+
+            def _ingest_progress(current: int, total: int) -> None:
+                print(f"  Ingesting file {current}/{total}...", end="\r")
+
+            stats = rag.ingest("examples/documents/", on_progress=_ingest_progress)
+            print(f"\nIngest complete. new={stats['new']}  changed={stats['changed']}  unchanged={stats['unchanged']}")
             continue
         answer = rag.query(question, evolve=True, history=conversation_history)
         conversation_history = rag.last_history

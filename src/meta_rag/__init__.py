@@ -78,11 +78,18 @@ class MetaRAG:
         if schema:
             self.schema = MetadataSchema(fields=schema)
 
-    def ingest(self, path: str | list[str]) -> None:
+    def ingest(
+        self,
+        path: str | list[str],
+        on_progress: Callable[[int, int], None] | None = None,
+    ) -> dict:
         """Ingest documents from a path or list of paths.
 
         Only processes new or changed documents (hash-based). If no schema is
         set, auto-discovers one from a sample of documents.
+
+        Returns:
+            {"unchanged": int, "changed": int, "new": int}
         """
         if isinstance(path, str):
             paths = [path]
@@ -104,7 +111,7 @@ class MetaRAG:
         if self.schema is None:
             self.schema = pipeline.discover_schema(paths)
 
-        pipeline.ingest(paths, self.schema)
+        return pipeline.ingest(paths, self.schema, on_progress=on_progress)
 
     def query(self, question: str, evolve: bool = False, history: list[dict] | None = None) -> str:
         """Ask a question — meta-rag handles routing automatically.

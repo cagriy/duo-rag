@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 from pathlib import Path
+from typing import Callable
 
 from meta_rag.ingestion.chunker import Chunker
 from meta_rag.ingestion.extractor import MetadataExtractor
@@ -33,32 +34,51 @@ class IngestionPipeline:
                 files.append(p)
         return files
 
-    def ingest(self, paths: list[str | Path], schema: MetadataSchema) -> None:
+    def ingest(
+        self,
+        paths: list[str | Path],
+        schema: MetadataSchema,
+        on_progress: Callable[[int, int], None] | None = None,
+    ) -> dict:
         self.vector_store.initialize(schema)
         self.relational_store.initialize(schema)
 
         files = self._expand_to_files(paths)
+        total = len(files)
+        unchanged = 0
+        changed = 0
+        new = 0
 
-        for file_path in files:
+        for idx, file_path in enumerate(files):
             doc_id = file_path.stem
             content = file_path.read_text(encoding="utf-8")
             content_hash = hashlib.sha256(content.encode()).hexdigest()
 
             stored_hash = self.relational_store.get_document_hash(doc_id)
             if stored_hash == content_hash:
-                continue  # unchanged — skip
+                unchanged += 1
+            else:
+                if stored_hash is None:
+                    new += 1
+                else:
+                    changed += 1
 
-            # Remove stale data for this document before re-ingesting
-            self.vector_store.delete_document(doc_id)
-            self.relational_store.delete_document(doc_id)
+                # Remove stale data for this document before re-ingesting
+                self.vector_store.delete_document(doc_id)
+                self.relational_store.delete_document(doc_id)
 
-            chunks = self.chunker.chunk_file(file_path)
-            for chunk in chunks:
-                metadata = self.extractor.extract(chunk.text, schema)
-                self.vector_store.add(chunk.doc_id, chunk.chunk_id, chunk.text, None, metadata)
-                self.relational_store.insert(chunk.doc_id, metadata)
+                chunks = self.chunker.chunk_file(file_path)
+                for chunk in chunks:
+                    metadata = self.extractor.extract(chunk.text, schema)
+                    self.vector_store.add(chunk.doc_id, chunk.chunk_id, chunk.text, None, metadata)
+                    self.relational_store.insert(chunk.doc_id, metadata)
 
-            self.relational_store.set_document_hash(doc_id, content_hash)
+                self.relational_store.set_document_hash(doc_id, content_hash)
+
+            if on_progress:
+                on_progress(idx + 1, total)
+
+        return {"unchanged": unchanged, "changed": changed, "new": new}
 
     def discover_schema(
         self, paths: list[str | Path], sample_count: int = 5
