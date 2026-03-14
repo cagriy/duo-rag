@@ -12,21 +12,21 @@ The traditional RAG works fine until you ask questions like:
 
 These result in an incomplete answer due to top-k with no signs of incompleteness.
 
-For a static, one-off corpus it is possible to improve this problem by extracting metadata for a predetermined set of fields. This approach has two problems:
+For an initial corpus it is possible to improve this problem by extracting metadata for a predetermined set of fields. This approach has two problems:
 
 1. One has to predict all the questions that can be asked against the corpus upfront.
-2. Constantly revising that prediction as the documents change, e.g. adding nobel prizes to the documents later, or extending the document set to contain artists.
+2. Constantly revising that prediction as the documents change, e.g. adding nobel prizes later, or extending the document set to contain artists.
 
 MetaRAG solves both problems by:
 
 1. An initial metadata (schema) discovery before the first ingestion
 2. Self-update schema with candidate fields when it fails to answer a question
 
-A periodic "backfill" method then extract and populates the candidate fields, or prunes them if the information is not contained within the corpus. If the backfill is running nightly, a question that has failed today, gets answered correctly tomorrow.
+A periodic "backfill" run then extracts and populates the candidate fields, or prunes them if the information is not contained within the corpus. If the backfill is running nightly, a question that has failed today, gets answered correctly tomorrow.
 
 ## How It Works
 
-meta-rag maintains two parallel stores for every ingested document:
+MetaRAG maintains two parallel stores for every ingested document:
 
 
 | Store            | Backend  | Used for                         |
@@ -38,7 +38,7 @@ At query time, an LLM uses **tool-calling** to decide which backend to hit — o
 
 ### Schema
 
-MetaRAG allows you define an initial schema, if you prefer to cover the most predictable fields and let the rest evolve based on user queries. If you skip the schema, meta-rag auto-discovers one by sampling a configurable subset of documents.
+MetaRAG allows you define an initial schema, if you prefer to cover the most predictable fields and let the rest evolve based on user queries. If you skip the schema, MetaRAG auto-discovers one by sampling a configurable subset of documents.
 
 ## Key Features
 
@@ -95,7 +95,7 @@ print(rag.query("What is the most common occupation?"))     # → SQL aggregatio
 ### Auto schema discovery
 
 ```python
-# No schema provided — meta-rag infers fields from a document sample on first ingest
+# No schema provided — MetaRAG infers fields from a document sample on first ingest
 rag = MetaRAG(llm_model="gpt-4o", data_dir="./my_data")
 rag.ingest("./documents/")
 print([f.name for f in rag.schema.fields])  # e.g. ["name", "birthplace", "occupation", ...]
