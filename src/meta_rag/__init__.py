@@ -123,11 +123,17 @@ class MetaRAG:
 
         return pipeline.ingest(paths, self.schema, on_progress=on_progress)
 
-    def query(self, question: str, evolve: bool = False, history: list[dict] | None = None) -> str:
+    def query(
+        self, question: str, evolve: bool = False, history: list[dict] | None = None, fallback: bool = False
+    ) -> str:
         """Ask a question — meta-rag handles routing automatically.
 
         If evolve=True, checks for schema gaps after answering and auto-adds
         any detected missing field (with an informational message appended).
+
+        If fallback=False (default), blocks semantic search fallback when SQL
+        fails — avoids returning misleading incomplete answers for aggregate
+        questions. Set fallback=True to allow the fallback with a warning.
         """
         if self.schema is None:
             raise RuntimeError(
@@ -143,17 +149,33 @@ class MetaRAG:
             tool_executor=tool_executor,
             schema=self.schema,
             query_system_prompt=self.prompts.query_system_prompt,
+            fallback=fallback,
         )
 
         answer = query_pipeline.query(question, history=history)
         self.last_sql = query_pipeline.last_sql
         self.last_history = query_pipeline.messages
 
+        if query_pipeline.last_fell_back and fallback:
+            answer += (
+                "\n\n[Note: This answer is based on text search and may be incomplete. "
+                "Run backfill() to enable precise SQL queries for this field.]"
+            )
+
         if evolve:
             result = self._detect_schema_gap(question)
             if result.gap_detected and result.proposed_field:
                 self.add_field(result.proposed_field)
-                answer = answer + result.message
+                if not fallback:
+                    # The answer came from semantic search (top-k) for a question
+                    # that needs structured data — discard it to avoid misleading
+                    # incomplete results.
+                    answer = (
+                        "This question requires structured metadata that isn't "
+                        "available yet." + result.message
+                    )
+                else:
+                    answer = answer + result.message
 
         return answer
 

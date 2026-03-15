@@ -16,6 +16,7 @@ class QueryPipeline:
         tool_executor: ToolExecutor,
         schema: MetadataSchema,
         query_system_prompt: str = DEFAULT_QUERY_SYSTEM_PROMPT,
+        fallback: bool = False,
     ) -> None:
         self.client = openai.OpenAI()
         self.model = llm_model
@@ -23,8 +24,10 @@ class QueryPipeline:
         self.schema = schema
         self.tools = schema.to_tool_definitions()
         self.query_system_prompt = query_system_prompt
+        self.fallback = fallback
         self.last_sql: str | None = None
         self.last_sql_returned_results: bool = False
+        self.last_fell_back: bool = False
         self.messages: list[dict] = []
 
     def query(self, question: str, history: list[dict] | None = None) -> str:
@@ -56,6 +59,7 @@ class QueryPipeline:
         # Execute each tool call and collect results
         self.last_sql = None
         self.last_sql_returned_results = False
+        self.last_fell_back = False
         tool_results: list[dict] = []
         for tool_call in choice.message.tool_calls:
             name = tool_call.function.name
@@ -93,8 +97,37 @@ class QueryPipeline:
         synthesis_choice = synthesis_response.choices[0]
 
         # If the LLM wants to make one more tool call (e.g. SQL returned empty,
-        # falling back to semantic_search), execute it and do a final synthesis
+        # falling back to semantic_search), decide whether to allow it
         if synthesis_choice.finish_reason == "tool_calls":
+            sql_failed = self.last_sql is not None and not self.last_sql_returned_results
+
+            if sql_failed and not self.fallback:
+                # Block the fallback — ask LLM to explain without tools
+                messages.append(
+                    {
+                        "role": "user",
+                        "content": (
+                            "The SQL query returned no results because the required "
+                            "data is not available as structured metadata yet. "
+                            "Explain to the user that this question cannot be answered "
+                            "precisely at this time and suggest using evolve=True and "
+                            "running backfill() to populate the needed fields."
+                        ),
+                    }
+                )
+                final_response = self.client.chat.completions.create(
+                    model=self.model,
+                    messages=messages,
+                )
+                final_content = final_response.choices[0].message.content
+                messages.append({"role": "assistant", "content": final_content})
+                self.messages = messages[1:]  # strip system message for history
+                return final_content
+
+            # Allow the follow-up tool call(s)
+            if sql_failed:
+                self.last_fell_back = True
+
             followup_results: list[dict] = []
             for tool_call in synthesis_choice.message.tool_calls:
                 name = tool_call.function.name
