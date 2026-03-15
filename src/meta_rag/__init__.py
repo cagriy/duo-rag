@@ -10,6 +10,7 @@ import openai
 from meta_rag.ingestion.chunker import Chunker
 from meta_rag.ingestion.extractor import MetadataExtractor
 from meta_rag.ingestion.pipeline import IngestionPipeline
+from meta_rag.prompts import PromptConfig
 from meta_rag.query.executor import ToolExecutor
 from meta_rag.query.pipeline import QueryPipeline
 from meta_rag.schema import MetadataField, MetadataSchema, SchemaEvolutionResult
@@ -21,6 +22,7 @@ __all__ = [
     "MetaRAG",
     "MetadataField",
     "MetadataSchema",
+    "PromptConfig",
     "SchemaEvolutionResult",
     "SearchResult",
 ]
@@ -43,12 +45,14 @@ class MetaRAG:
         chunk_overlap: int = 200,
         vector_store: ChromaVectorStore | None = None,
         relational_store: SQLiteRelationalStore | None = None,
+        prompts: PromptConfig | None = None,
     ) -> None:
         self.llm_model = llm_model
         self.extraction_model = extraction_model
         self.data_dir = data_dir
         self.chunk_size = chunk_size
         self.chunk_overlap = chunk_overlap
+        self.prompts = prompts or PromptConfig()
 
         # Default stores
         self.vector_store = vector_store or ChromaVectorStore(
@@ -102,7 +106,11 @@ class MetaRAG:
             chunk_size=self.chunk_size,
             chunk_overlap=self.chunk_overlap,
         )
-        extractor = MetadataExtractor(llm_model=self.extraction_model)
+        extractor = MetadataExtractor(
+            llm_model=self.extraction_model,
+            extraction_prompt=self.prompts.metadata_extraction_prompt,
+            discovery_prompt=self.prompts.schema_discovery_prompt,
+        )
         pipeline = IngestionPipeline(
             chunker=chunker,
             extractor=extractor,
@@ -134,6 +142,7 @@ class MetaRAG:
             llm_model=self.llm_model,
             tool_executor=tool_executor,
             schema=self.schema,
+            query_system_prompt=self.prompts.query_system_prompt,
         )
 
         answer = query_pipeline.query(question, history=history)
@@ -155,31 +164,8 @@ class MetaRAG:
         ]
         fields_text = "\n".join(current_fields) if current_fields else "(no fields defined)"
 
-        system_message = (
-            "You are a schema analyst for a structured metadata database. "
-            "Given a user question and the current schema, decide if the question requires "
-            "a SHORT, STRUCTURED metadata field that is missing.\n\n"
-            "A valid gap is a field that is:\n"
-            "  - atomic and short (e.g. a name, a year, a category, a country)\n"
-            "  - useful for filtering or aggregation (GROUP BY, COUNT, WHERE)\n"
-            "  - not already answerable by searching the document text\n\n"
-            "Do NOT flag a gap for:\n"
-            "  - open-ended or descriptive questions (e.g. 'tell me about', 'explain', 'describe')\n"
-            "  - fields that would store long text or summaries (e.g. biography, summary, description)\n"
-            "  - questions already well-served by semantic/vector search\n"
-            "  - counting or aggregation questions that are fully answerable with existing fields "
-            "(e.g. 'how many people total' needs no new field; but 'how many died after 1800' "
-            "DOES need year_of_death if it doesn't exist)\n"
-            "  - identifier or system fields (e.g. person_id, record_id, id, key, index)\n"
-            "  - fields that already exist in the schema\n"
-            "  - fields that are SEMANTICALLY EQUIVALENT to an existing field, even if named "
-            "differently (e.g. 'field_of_expertise', 'profession', 'role', 'specialization' "
-            "are all covered by 'occupation')\n\n"
-            "Return JSON with:\n"
-            "- gap_detected (bool)\n"
-            "- reasoning (string): brief explanation\n"
-            "- proposed_field (object or null): if gap_detected, {name (snake_case), type ('text' or 'integer'), description}\n\n"
-            f"Current schema fields:\n{fields_text}"
+        system_message = self.prompts.schema_gap_detection_prompt.format(
+            fields_text=fields_text,
         )
 
         client = openai.OpenAI()
@@ -255,7 +241,11 @@ class MetaRAG:
             return {"populated": [], "pruned": pruned}
 
         backfill_schema = MetadataSchema(fields=unpopulated)
-        extractor = MetadataExtractor(llm_model=self.extraction_model)
+        extractor = MetadataExtractor(
+            llm_model=self.extraction_model,
+            extraction_prompt=self.prompts.metadata_extraction_prompt,
+            discovery_prompt=self.prompts.schema_discovery_prompt,
+        )
 
         total = len(all_chunks)
         for idx, (doc_id, chunk_id, text) in enumerate(all_chunks):
