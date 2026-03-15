@@ -106,13 +106,7 @@ class QueryPipeline:
                 messages.append(
                     {
                         "role": "user",
-                        "content": (
-                            "The SQL query returned no results because the required "
-                            "data is not available as structured metadata yet. "
-                            "Explain to the user that this question cannot be answered "
-                            "precisely at this time and suggest using evolve=True and "
-                            "running backfill() to populate the needed fields."
-                        ),
+                        "content": "The SQL query returned no results.",
                     }
                 )
                 final_response = self.client.chat.completions.create(

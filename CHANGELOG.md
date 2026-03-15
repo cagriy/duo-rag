@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.5] - 2026-03-15
+
+### Changed
+- All user-facing response messages are now LLM-generated via existing prompts instead of hardcoded strings
+- Schema gap detection prompt returns `message` and `unavailable_message` fields in its JSON response
+- Query system prompt includes behavioral instructions for SQL failure and semantic search fallback scenarios
+- User-facing messages use friendly language and suggest checking back later instead of exposing technical details like `backfill()` or field names
+
+### Added
+- `unavailable_message` field on `SchemaEvolutionResult` for self-contained user-facing explanations
+
 ## [0.1.4] - 2026-03-15
 
 ### Added

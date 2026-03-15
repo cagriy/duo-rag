@@ -156,12 +156,6 @@ class MetaRAG:
         self.last_sql = query_pipeline.last_sql
         self.last_history = query_pipeline.messages
 
-        if query_pipeline.last_fell_back and fallback:
-            answer += (
-                "\n\n[Note: This answer is based on text search and may be incomplete. "
-                "Run backfill() to enable precise SQL queries for this field.]"
-            )
-
         if evolve:
             result = self._detect_schema_gap(question)
             if result.gap_detected and result.proposed_field:
@@ -169,12 +163,15 @@ class MetaRAG:
                 if not fallback:
                     # The answer came from semantic search (top-k) for a question
                     # that needs structured data — discard it to avoid misleading
-                    # incomplete results.
+                    # incomplete results. Use unavailable_message (which covers
+                    # both the "can't answer" and "run backfill" aspects).
                     answer = (
-                        "This question requires structured metadata that isn't "
-                        "available yet." + result.message
+                        result.unavailable_message or
+                        "This question can't be answered precisely right now. "
+                        "Please check back later for more precise results."
                     )
                 else:
+                    # We have a fallback answer — append the "field added" note.
                     answer = answer + result.message
 
         return answer
@@ -213,20 +210,17 @@ class MetaRAG:
                 description=pf.get("description", ""),
             )
 
-        if gap_detected and proposed_field:
-            message = (
-                f"\n\n[Schema Gap Detected] A new field '{proposed_field.name}' "
-                f"({proposed_field.description}) has been added to the schema. "
-                f"Run backfill() to populate it from existing documents."
-            )
-        else:
-            message = ""
+        message = raw.get("message", "")
+        if message:
+            message = "\n\n" + message
+        unavailable_message = raw.get("unavailable_message", "")
 
         return SchemaEvolutionResult(
             gap_detected=gap_detected,
             reasoning=reasoning,
             proposed_field=proposed_field,
             message=message,
+            unavailable_message=unavailable_message,
         )
 
     def add_field(self, field: MetadataField) -> None:

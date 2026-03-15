@@ -44,6 +44,19 @@ class TestPromptConfigDefaults:
         assert "{name (snake_case)" in result
         assert "year (integer): Year of birth" in result
 
+    def test_schema_gap_detection_prompt_includes_message_fields(self):
+        config = PromptConfig()
+        prompt = config.schema_gap_detection_prompt
+        assert "- message (string)" in prompt
+        assert "- unavailable_message (string)" in prompt
+
+    def test_query_system_prompt_includes_fallback_instructions(self):
+        config = PromptConfig()
+        prompt = config.query_system_prompt
+        assert "SQL query" in prompt
+        assert "check back later" in prompt
+        assert "semantic search" in prompt
+
     def test_custom_override(self):
         config = PromptConfig(query_system_prompt="Custom: {available_columns}")
         assert config.query_system_prompt == "Custom: {available_columns}"
