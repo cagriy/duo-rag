@@ -41,6 +41,16 @@ stages:
         excluded_names:
           - "Newton"
           - "Galileo"
+          - "Euler"
+        expected_names:
+          - "Curie"
+          - "Darwin"
+          - "Einstein"
+          - "Lovelace"
+          - "Noether"
+          - "Ramanujan"
+          - "Tesla"
+          - "Turing"
 
       - id: basic_sql_from_england
         question: "How many people in the dataset are from England?"
@@ -80,11 +90,15 @@ stages:
       - id: post_backfill_death_year
         question: "Who has died after 1900?"
         type: quantitative
-        judge_criteria: "Answer should list people who died after 1900 using the newly backfilled death year field"
+        judge_criteria: "Answer should list people who died after 1900 using the newly backfilled death year field, names are sufficient, death year is a bonus"
         expect_sql: true
         expected_names:
           - "Curie"
           - "Einstein"
+          - "Noether"
+          - "Ramanujan"
+          - "Tesla"
+          - "Turing"
 
   - name: "Stage 4: Conversational Follow-ups"
     tests:

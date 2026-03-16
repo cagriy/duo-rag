@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.7] - 2026-03-16
+
+### Fixed
+- Flaky eval: added `expected_names` to `basic_sql_born_after` and `post_backfill_death_year` for deterministic checks that bypass judge hallucinations
+- Query pipeline allowing parallel first-round tool calls that bypassed the fallback gate — now uses `parallel_tool_calls=False` to force single tool selection
+
+### Changed
+- Updated `excluded_names` for `basic_sql_born_after` to include Euler
+
 ## [0.1.6] - 2026-03-16
 
 ### Added

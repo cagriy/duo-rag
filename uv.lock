@@ -718,6 +718,11 @@ dependencies = [
     { name = "python-dotenv" },
 ]
 
+[package.optional-dependencies]
+dev = [
+    { name = "pytest" },
+]
+
 [package.dev-dependencies]
 dev = [
     { name = "pytest" },
@@ -728,10 +733,12 @@ eval = [
 
 [package.metadata]
 requires-dist = [
-    { name = "chromadb" },
-    { name = "openai" },
-    { name = "python-dotenv" },
+    { name = "chromadb", specifier = ">=0.4" },
+    { name = "openai", specifier = ">=1.0" },
+    { name = "pytest", marker = "extra == 'dev'" },
+    { name = "python-dotenv", specifier = ">=0.19" },
 ]
+provides-extras = ["dev"]
 
 [package.metadata.requires-dev]
 dev = [{ name = "pytest" }]

@@ -225,25 +225,29 @@ Edit `examples/eval_tests.yaml`. Each test case supports:
 ```python
 MetaRAG(
     llm_model: str = "gpt-4o-mini",
+    extraction_model: str = "gpt-4o-mini",
     schema: list[MetadataField] | None = None,
     data_dir: str = "./meta_rag_data",
     chunk_size: int = 1000,
     chunk_overlap: int = 200,
-    vector_store: ChromaVectorStore | None = None,
-    relational_store: SQLiteRelationalStore | None = None,
+    vector_store: VectorStore | None = None,
+    relational_store: RelationalStore | None = None,
+    prompts: PromptConfig | None = None,
 )
 ```
 
 
 | Parameter          | Default             | Description                                                              |
 | -------------------- | --------------------- | -------------------------------------------------------------------------- |
-| `llm_model`        | `"gpt-4o"`          | OpenAI model for extraction and querying                                 |
-| `schema`           | `None`              | List of`MetadataField`; auto-discovered on first ingest if omitted       |
+| `llm_model`        | `"gpt-4o-mini"`     | OpenAI model for query routing and answering                             |
+| `extraction_model`  | `"gpt-4o-mini"`     | OpenAI model used for metadata extraction during ingestion               |
+| `schema`           | `None`              | List of `MetadataField`; auto-discovered on first ingest if omitted      |
 | `data_dir`         | `"./meta_rag_data"` | Directory for ChromaDB and SQLite persistence                            |
 | `chunk_size`       | `1000`              | Max characters per text chunk                                            |
 | `chunk_overlap`    | `200`               | Character overlap between consecutive chunks                             |
-| `vector_store`     | `None`              | Custom`ChromaVectorStore` (default created in `data_dir` if omitted)     |
-| `relational_store` | `None`              | Custom`SQLiteRelationalStore` (default created in `data_dir` if omitted) |
+| `vector_store`     | `None`              | Custom `VectorStore` (default created in `data_dir` if omitted)          |
+| `relational_store` | `None`              | Custom `RelationalStore` (default created in `data_dir` if omitted)      |
+| `prompts`          | `None`              | Custom `PromptConfig` for overriding system prompts                      |
 
 ### `ingest(path, on_progress=None) → dict`
 

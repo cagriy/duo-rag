@@ -46,6 +46,7 @@ class QueryPipeline:
             model=self.model,
             messages=messages,
             tools=self.tools,
+            parallel_tool_calls=False,
         )
 
         choice = response.choices[0]

@@ -5,7 +5,7 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from meta_rag.schema import MetadataSchema
+    from meta_rag.schema import MetadataField, MetadataSchema
 
 
 @dataclass
@@ -70,3 +70,27 @@ class RelationalStore(ABC):
 
     @abstractmethod
     def clear_all_data(self) -> None: ...
+
+    @abstractmethod
+    def get_schema_from_db(self) -> MetadataSchema | None: ...
+
+    @abstractmethod
+    def add_column(self, field: MetadataField) -> None: ...
+
+    @abstractmethod
+    def drop_column(self, field_name: str) -> None: ...
+
+    @abstractmethod
+    def get_empty_fields(self) -> list[str]: ...
+
+    @abstractmethod
+    def get_unpopulated_fields(self, schema: MetadataSchema) -> list[MetadataField]: ...
+
+    @abstractmethod
+    def update_metadata_field(self, doc_id: str, field_name: str, value: object) -> None: ...
+
+    @abstractmethod
+    def get_document_hash(self, doc_id: str) -> str | None: ...
+
+    @abstractmethod
+    def set_document_hash(self, doc_id: str, content_hash: str) -> None: ...

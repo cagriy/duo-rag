@@ -14,7 +14,7 @@ from meta_rag.prompts import PromptConfig
 from meta_rag.query.executor import ToolExecutor
 from meta_rag.query.pipeline import QueryPipeline
 from meta_rag.schema import MetadataField, MetadataSchema, SchemaEvolutionResult
-from meta_rag.stores.base import SearchResult
+from meta_rag.stores.base import RelationalStore, SearchResult, VectorStore
 from meta_rag.stores.relational import SQLiteRelationalStore
 from meta_rag.stores.vector import ChromaVectorStore
 
@@ -23,8 +23,10 @@ __all__ = [
     "MetadataField",
     "MetadataSchema",
     "PromptConfig",
+    "RelationalStore",
     "SchemaEvolutionResult",
     "SearchResult",
+    "VectorStore",
 ]
 
 
@@ -43,8 +45,8 @@ class MetaRAG:
         data_dir: str = "./meta_rag_data",
         chunk_size: int = 1000,
         chunk_overlap: int = 200,
-        vector_store: ChromaVectorStore | None = None,
-        relational_store: SQLiteRelationalStore | None = None,
+        vector_store: VectorStore | None = None,
+        relational_store: RelationalStore | None = None,
         prompts: PromptConfig | None = None,
     ) -> None:
         self.llm_model = llm_model

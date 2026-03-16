@@ -7,11 +7,31 @@ authors = [
     { name = "Cagri Yucel", email = "1134069+cagriy@users.noreply.github.com" }
 ]
 requires-python = ">=3.11"
-dependencies = [
-    "openai",
-    "chromadb",
-    "python-dotenv",
+license = "Apache-2.0"
+keywords = ["rag", "retrieval-augmented-generation", "metadata", "llm", "openai", "chromadb", "schema", "sql"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "License :: OSI Approved :: Apache Software License",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Typing :: Typed",
 ]
+dependencies = [
+    "openai>=1.0",
+    "chromadb>=0.4",
+    "python-dotenv>=0.19",
+]
+
+[project.urls]
+Homepage = "https://github.com/cagriy/meta-rag"
+Repository = "https://github.com/cagriy/meta-rag"
+Changelog = "https://github.com/cagriy/meta-rag/releases"
+Issues = "https://github.com/cagriy/meta-rag/issues"
+
+[project.optional-dependencies]
+dev = ["pytest"]
 
 [dependency-groups]
 dev = [
