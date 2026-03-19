@@ -1,5 +1,9 @@
 from __future__ import annotations
 
+from importlib.metadata import version as _meta_version
+
+__version__ = _meta_version("meta-rag")
+
 import json
 import os
 from pathlib import Path
@@ -19,6 +23,7 @@ from meta_rag.stores.relational import SQLiteRelationalStore
 from meta_rag.stores.vector import ChromaVectorStore
 
 __all__ = [
+    "__version__",
     "MetaRAG",
     "MetadataField",
     "MetadataSchema",
