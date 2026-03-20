@@ -52,9 +52,9 @@ DuoRAG allows you define an initial schema, if you prefer to cover the most pred
 ## Installation
 
 ```bash
-uv add duo-rag
-# or
 pip install duo-rag
+# or
+uv add duo-rag
 ```
 
 Set your OpenAI API key:
@@ -140,13 +140,14 @@ The repository includes an example script that ingests a set of biographical `.t
 
 ```bash
 # Ingest documents and enter interactive mode
-uv run python examples/example_usage.py
+python examples/example_usage.py
+# or: uv run python examples/example_usage.py
 
 # Run pre-defined demo queries first, then enter interactive mode
-uv run python examples/example_usage.py --test
+python examples/example_usage.py --test
 
 # Also print the generated SQL alongside each answer
-uv run python examples/example_usage.py --test --verbose
+python examples/example_usage.py --test --verbose
 ```
 
 **Interactive mode commands:**
@@ -177,17 +178,21 @@ Tests are defined in `examples/eval_tests.yaml` as a sequence of **stages**, eac
 ### Running the eval
 
 ```bash
+# Install eval dependencies
+pip install duo-rag[eval]
+# or: uv add duo-rag --group eval
+
 # Basic run (reuses existing eval_data if present)
-uv run --group eval python examples/run_eval.py
+python examples/run_eval.py
 
 # Clean run — delete eval_data and start fresh
-uv run --group eval python examples/run_eval.py --reset
+python examples/run_eval.py --reset
 
 # Verbose — print answers and judge reasoning
-uv run --group eval python examples/run_eval.py --verbose
+python examples/run_eval.py --verbose
 
 # Save a detailed JSON report
-uv run --group eval python examples/run_eval.py --save-report eval_report.json
+python examples/run_eval.py --save-report eval_report.json
 ```
 
 ### Test stages

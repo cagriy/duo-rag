@@ -1,6 +1,6 @@
 [project]
 name = "duo-rag"
-version = "0.1.9"
+version = "0.1.10"
 description = "Extends RAG with structured query capabilities using dual vector + relational storage"
 readme = "README.md"
 authors = [
