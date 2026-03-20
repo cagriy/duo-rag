@@ -1,6 +1,6 @@
 [project]
 name = "duo-rag"
-version = "0.1.8"
+version = "0.1.9"
 description = "Extends RAG with structured query capabilities using dual vector + relational storage"
 readme = "README.md"
 authors = [
@@ -10,7 +10,7 @@ requires-python = ">=3.11"
 license = "Apache-2.0"
 keywords = ["rag", "retrieval-augmented-generation", "metadata", "llm", "openai", "chromadb", "schema", "sql"]
 classifiers = [
-    "Development Status :: 3 - Alpha",
+    "Development Status :: 4 - Beta",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
